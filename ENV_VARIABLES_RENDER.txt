@@ -1,0 +1,55 @@
+════════════════════════════════════════════════════════════════════════════════
+COPIAR Y PEGAR EN RENDER (UNA POR UNA)
+════════════════════════════════════════════════════════════════════════════════
+
+En Render, cuando agregues variables de entorno, copia/pega EXACTAMENTE esto:
+
+KEY: DATABASE_URL
+VALUE: postgresql://user:pass@localhost:5432/atlas_db
+
+KEY: JWT_SECRET
+VALUE: your-secret-key-min-32-characters-long-here
+
+KEY: JWT_EXPIRES_IN
+VALUE: 7d
+
+KEY: OPENAI_API_KEY
+VALUE: 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
+
+KEY: OPENAI_MODEL
+VALUE: gpt-4o-mini
+
+KEY: WHATSAPP_ACCESS_TOKEN
+VALUE: EAAX9C6hGVd4BSnhABoQ41NAC6TAZACaTZCMdjXqWvX3ZBAKBOfVnyf0rYau28EtbwI2hnZBIZC3psJH1Cu2I0ecHjctUDT3SZCJPgJC3fham8ZBpMaH5At4oa4v5ltI6xZCAYNrdtZCz6rNoSBLABzX9YDloPfQQRKVje2FV6hlZCBDZB15lUdApvLw2oONcFZBF9Ruq5N2PhD0HQYW9eZArg6P4iAtZASml4v122kaheMWYJe5lEgUhvalsRYr29zboeX5O9OSvk6bNXxz2rsqBuHK83p
+
+KEY: WHATSAPP_PHONE_NUMBER_ID
+VALUE: 1240602945813907
+
+KEY: WHATSAPP_VERIFY_TOKEN
+VALUE: atlas-verify-token
+
+KEY: WHATSAPP_APP_SECRET
+VALUE: 32dc8f5736a1cf7e7f89e031f5aa8c34
+
+KEY: LOCAL_MODE
+VALUE: false
+
+KEY: PORT
+VALUE: 3000
+
+KEY: NODE_ENV
+VALUE: production
+
+KEY: CORS_ORIGIN
+VALUE: https://atlas-whatsapp-bot-web.onrender.com
+
+════════════════════════════════════════════════════════════════════════════════
+
+Pasos en Render:
+1. En "Environment Variables", click en "Add Variable"
+2. Ingresa KEY (ej: DATABASE_URL)
+3. Ingresa VALUE (ej: postgresql://...)
+4. Click "Add" o "Save"
+5. Repite para cada variable
+
+════════════════════════════════════════════════════════════════════════════════
