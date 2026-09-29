@@ -1,0 +1,21 @@
+[build]
+builder = "dockerfile"
+
+[deploy]
+startCommand = "cd backend && npm run start:prod"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 5
+
+[env]
+PORT = "3000"
+NODE_ENV = "production"
+JWT_SECRET = "your-secret-key-min-32-characters-long-here"
+JWT_EXPIRES_IN = "7d"
+OPENAI_API_KEY = "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"
+OPENAI_MODEL = "gpt-4o-mini"
+WHATSAPP_ACCESS_TOKEN = "EAAX9C6hGVd4BSnhABoQ41NAC6TAZACaTZCMdjXqWvX3ZBAKBOfVnyf0rYau28EtbwI2hnZBIZC3psJH1Cu2I0ecHjctUDT3SZCJPgJC3fham8ZBpMaH5At4oa4v5ltI6xZCAYNrdtZCz6rNoSBLABzX9YDloPfQQRKVje2FV6hlZCBDZB15lUdApvLw2oONcFZBF9Ruq5N2PhD0HQYW9eZArg6P4iAtZASml4v122kaheMWYJe5lEgUhvalsRYr29zboeX5O9OSvk6bNXxz2rsqBuHK83p"
+WHATSAPP_PHONE_NUMBER_ID = "1240602945813907"
+WHATSAPP_VERIFY_TOKEN = "atlas-verify-token"
+WHATSAPP_APP_SECRET = "32dc8f5736a1cf7e7f89e031f5aa8c34"
+LOCAL_MODE = "false"
+CORS_ORIGIN = "https://atlas-whatsapp-bot-web.onrender.com"
