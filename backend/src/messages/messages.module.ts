@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { MessagesService } from './messages.service';
 import { MessagesController } from './messages.controller';
-import { ConversationsModule } from '../conversations/conversations.module';
 import { AiModule } from '../ai/ai.module';
+import { DatabaseModule } from '../database/database.module';
 
 @Module({
-  imports: [ConversationsModule, AiModule],
+  imports: [DatabaseModule, AiModule],
   controllers: [MessagesController],
   providers: [MessagesService],
   exports: [MessagesService],

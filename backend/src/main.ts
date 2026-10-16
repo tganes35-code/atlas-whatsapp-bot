@@ -32,20 +32,13 @@ async function bootstrap() {
   // ─── Swagger ────────────────────────────────────────────────
   const config = new DocumentBuilder()
     .setTitle('Atlas WhatsApp Bot API')
-    .setDescription('API completa del sistema Atlas WhatsApp Bot')
+    .setDescription('API WhatsApp Chatbot - Lightweight para producción')
     .setVersion('1.0')
     .addBearerAuth()
     .addTag('auth', 'Autenticación')
-    .addTag('company', 'Empresa')
-    .addTag('users', 'Usuarios')
-    .addTag('customers', 'Clientes')
     .addTag('categories', 'Categorías')
     .addTag('products', 'Productos')
-    .addTag('carts', 'Carritos')
-    .addTag('orders', 'Pedidos')
-    .addTag('conversations', 'Conversaciones')
     .addTag('messages', 'Mensajes / Chatbot')
-    .addTag('dashboard', 'Dashboard')
     .addTag('whatsapp', 'WhatsApp Webhook')
     .build();
 

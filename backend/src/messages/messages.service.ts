@@ -1,6 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConversationStatus, MessageSender, ConversationChannel } from '@prisma/client';
-import { ConversationsService } from '../conversations/conversations.service';
+import { PrismaService } from '../database/prisma.service';
 import { AiService } from '../ai/ai.service';
 import { ProcessMessageDto } from './dto/send-message.dto';
 
@@ -9,49 +8,54 @@ export class MessagesService {
   private readonly logger = new Logger(MessagesService.name);
 
   constructor(
-    private readonly conversationsService: ConversationsService,
+    private readonly prisma: PrismaService,
     private readonly aiService: AiService,
   ) {}
 
-  /**
-   * Punto de entrada central para TODOS los mensajes del chatbot.
-   * Simulador local y WhatsApp usan este mismo método.
-   *
-   * Flujo:
-   * 1. Buscar/crear conversación OPEN (nunca reutilizar HUMAN)
-   * 2. Guardar mensaje del cliente
-   * 3. Si está en HUMAN → silencio, el agente atiende manualmente
-   * 4. Pasar por el motor de lógica → IA como fallback
-   * 5. Guardar respuesta del bot
-   */
   async processIncomingMessage(dto: ProcessMessageDto) {
-    const channel = ((dto.channel ?? 'LOCAL').toUpperCase() as ConversationChannel);
+    // Encontrar o crear cliente por teléfono
+    let customer = await this.prisma.customer.findUnique({
+      where: { phone: dto.phone },
+    });
 
-    // 1. Obtener o crear conversación (findOrCreateByPhone ya NO reutiliza HUMAN)
-    const { conversation, customer } =
-      await this.conversationsService.findOrCreateByPhone(dto.phone, channel);
-
-    // 2. Guardar el mensaje del cliente
-    await this.conversationsService.addMessage(
-      conversation.id,
-      MessageSender.CUSTOMER,
-      dto.message,
-    );
-
-    // 3. Si está en HUMAN — el agente atiende, el bot no interviene
-    if (conversation.status === ConversationStatus.HUMAN) {
-      this.logger.log(
-        `Conversación ${conversation.id} en HUMAN — esperando agente`,
-      );
-      return {
-        conversationId: conversation.id,
-        customerId: customer.id,
-        botResponse: null,
-        humanMode: true,
-      };
+    if (!customer) {
+      customer = await this.prisma.customer.create({
+        data: {
+          phone: dto.phone,
+          name: `Cliente ${dto.phone}`,
+        },
+      });
     }
 
-    // 4. Procesar con el motor lógico (lógica de reglas + IA como fallback)
+    // Encontrar conversación abierta del cliente
+    let conversation = await this.prisma.conversation.findFirst({
+      where: {
+        customerId: customer.id,
+        status: 'OPEN',
+      },
+    });
+
+    // Si no existe, crear nueva
+    if (!conversation) {
+      conversation = await this.prisma.conversation.create({
+        data: {
+          customerId: customer.id,
+          status: 'OPEN',
+          channel: (dto.channel ?? 'LOCAL') as any,
+        },
+      });
+    }
+
+    // Guardar mensaje del cliente
+    await this.prisma.message.create({
+      data: {
+        conversationId: conversation.id,
+        content: dto.message,
+        sender: 'CUSTOMER',
+      },
+    });
+
+    // Procesar con IA
     let botResponse = '';
     try {
       botResponse = await this.aiService.processMessage(
@@ -60,36 +64,28 @@ export class MessagesService {
         dto.message,
       );
     } catch (error: any) {
-      this.logger.error('Error en motor de chat:', error.message);
-      botResponse =
-        'Lo siento, tuve un problema procesando tu mensaje. Por favor intenta de nuevo. 🙏';
+      this.logger.error('Error procesando mensaje:', error.message);
+      botResponse = 'Lo siento, tuve un problema. Por favor intenta de nuevo.';
     }
 
-    // 5. Verificar si durante el procesamiento se activó el handoff a HUMAN
-    const updatedConv = await this.conversationsService
-      .findOne(conversation.id)
-      .catch(() => conversation);
-
-    const wentHuman = updatedConv.status === ConversationStatus.HUMAN;
-
-    // 6. Guardar la respuesta del bot (sea handoff o respuesta normal)
+    // Guardar respuesta del bot
     if (botResponse) {
-      await this.conversationsService.addMessage(
-        conversation.id,
-        MessageSender.BOT,
-        botResponse,
-      );
+      await this.prisma.message.create({
+        data: {
+          conversationId: conversation.id,
+          content: botResponse,
+          sender: 'BOT',
+        },
+      });
     }
 
-    this.logger.log(
-      `[${customer.phone}] "${dto.message.substring(0, 40)}" → ${wentHuman ? 'HUMAN' : 'BOT'}: "${botResponse?.substring(0, 60) ?? 'null'}"`,
-    );
+    this.logger.log(`[${customer.phone}] "${dto.message.substring(0, 40)}" → BOT: "${botResponse?.substring(0, 60)}"`);
 
     return {
       conversationId: conversation.id,
       customerId: customer.id,
+      phoneNumber: customer.phone,
       botResponse,
-      humanMode: wentHuman,
     };
   }
 }

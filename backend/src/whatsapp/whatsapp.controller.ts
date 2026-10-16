@@ -52,7 +52,7 @@ export class WhatsappController {
         channel: 'WHATSAPP',
       });
 
-      if (!result.humanMode && result.botResponse) {
+      if (result.botResponse) {
         await this.whatsappService.sendTextMessage(parsed.phone, result.botResponse);
       }
     } catch (error: any) {

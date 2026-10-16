@@ -1,17 +1,18 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { MessagesService } from './messages.service';
 import { ProcessMessageDto } from './dto/send-message.dto';
+import { Public } from '../common/decorators/public.decorator';
 
 @ApiTags('messages')
-@ApiBearerAuth()
 @Controller('messages')
 export class MessagesController {
   constructor(private readonly messagesService: MessagesService) {}
 
   @Post('process')
+  @Public()
   @ApiOperation({
-    summary: 'Procesar un mensaje entrante (simulador / local)',
+    summary: 'Procesar un mensaje entrante (simulador / local / webhook)',
     description:
       'Punto de entrada principal del chatbot. Recibe mensaje, procesa con IA y devuelve respuesta.',
   })
