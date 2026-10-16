@@ -13,24 +13,10 @@ export class MessagesService {
   ) {}
 
   async processIncomingMessage(dto: ProcessMessageDto) {
-    // Encontrar o crear cliente por teléfono
-    let customer = await this.prisma.customer.findUnique({
-      where: { phone: dto.phone },
-    });
-
-    if (!customer) {
-      customer = await this.prisma.customer.create({
-        data: {
-          phone: dto.phone,
-          name: `Cliente ${dto.phone}`,
-        },
-      });
-    }
-
-    // Encontrar conversación abierta del cliente
+    // Encontrar conversación abierta por teléfono
     let conversation = await this.prisma.conversation.findFirst({
       where: {
-        customerId: customer.id,
+        phone: dto.phone,
         status: 'OPEN',
       },
     });
@@ -39,9 +25,9 @@ export class MessagesService {
     if (!conversation) {
       conversation = await this.prisma.conversation.create({
         data: {
-          customerId: customer.id,
+          phone: dto.phone,
           status: 'OPEN',
-          channel: (dto.channel ?? 'LOCAL') as any,
+          channel: (dto.channel ?? 'WHATSAPP') as any,
         },
       });
     }
@@ -60,7 +46,7 @@ export class MessagesService {
     try {
       botResponse = await this.aiService.processMessage(
         conversation.id,
-        customer.id,
+        dto.phone,
         dto.message,
       );
     } catch (error: any) {
@@ -79,12 +65,11 @@ export class MessagesService {
       });
     }
 
-    this.logger.log(`[${customer.phone}] "${dto.message.substring(0, 40)}" → BOT: "${botResponse?.substring(0, 60)}"`);
+    this.logger.log(`[${conversation.phone}] "${dto.message.substring(0, 40)}" → BOT: "${botResponse?.substring(0, 60)}"`);
 
     return {
       conversationId: conversation.id,
-      customerId: customer.id,
-      phoneNumber: customer.phone,
+      phoneNumber: conversation.phone,
       botResponse,
     };
   }

@@ -1,34 +1,10 @@
-import { PrismaClient, UserRole, ConversationStatus, ConversationChannel, MessageSender, CartStatus, OrderStatus, PaymentMethod } from '@prisma/client';
+import { PrismaClient, UserRole, ConversationStatus, ConversationChannel, MessageSender } from '@prisma/client';
 import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Iniciando seed de Atlas WhatsApp Bot...');
-
-  // ─── Empresa ─────────────────────────────────────────────────
-  const company = await prisma.company.upsert({
-    where: { id: 'company-atlas-demo' },
-    update: {},
-    create: {
-      id: 'company-atlas-demo',
-      name: 'Atlas Demo Store',
-      description: 'Tienda de productos de prueba para validar Atlas WhatsApp Bot.',
-      phone: '+573000000000',
-      email: 'info@atlasdemo.local',
-      address: 'Calle 1 # 1-1, Centro',
-      country: 'Colombia',
-      currency: 'COP',
-      schedules: JSON.stringify({
-        lunes_viernes: '8:00 AM - 6:00 PM',
-        sabado: '9:00 AM - 2:00 PM',
-        domingo: 'Cerrado',
-      }),
-      policies: 'Cambios y devoluciones dentro de los 15 días posteriores a la compra, con el producto en perfecto estado y con su empaque original. Envíos a todo Colombia con costo adicional de $10.000 COP.',
-      extraInfo: 'Somos una tienda especializada en ropa y accesorios de la marca Atlas. Aceptamos pago en efectivo, transferencia bancaria y pago contra entrega. WhatsApp: +573000000000',
-    },
-  });
-  console.log('✅ Empresa creada:', company.name);
 
   // ─── Usuario admin ───────────────────────────────────────────
   const adminPassword = await argon2.hash('Admin123!');
@@ -274,30 +250,15 @@ async function main() {
 
   console.log('✅ Productos creados: 8');
 
-  // ─── Cliente demo ────────────────────────────────────────────
-  const clienteDemo = await prisma.customer.upsert({
-    where: { phone: '3001234567' },
-    update: {},
-    create: {
-      name: 'Juan Pérez',
-      phone: '3001234567',
-      email: 'juan.perez@demo.local',
-      address: 'Calle 45 # 23-10',
-      city: 'Bogotá',
-      notes: 'Cliente demo para pruebas del sistema',
-    },
-  });
-  console.log('✅ Cliente demo creado:', clienteDemo.name);
-
   // ─── Conversación demo ───────────────────────────────────────
   const conversacionDemo = await prisma.conversation.upsert({
     where: { id: 'conv-demo-001' },
     update: {},
     create: {
       id: 'conv-demo-001',
-      customerId: clienteDemo.id,
+      phone: '3001234567',
       status: ConversationStatus.OPEN,
-      channel: ConversationChannel.LOCAL,
+      channel: ConversationChannel.WHATSAPP,
     },
   });
 
@@ -317,7 +278,7 @@ async function main() {
         {
           conversationId: conversacionDemo.id,
           sender: MessageSender.BOT,
-          content: '¡Hola! 👋 Bienvenido a Atlas Demo Store. Soy el asistente virtual y estoy aquí para ayudarte.\n\nPuedo ayudarte a:\n🛍️ Ver productos\n🔎 Buscar un producto\n🛒 Crear un pedido\n📦 Consultar un pedido\n👤 Hablar con un asesor\n\n¿En qué puedo ayudarte?',
+          content: '¡Hola! 👋 Bienvenido a Atlas Demo Store. Soy el asistente virtual y estoy aquí para ayudarte.\n\nPuedo ayudarte a:\n🛍️ Ver productos\n🔎 Buscar un producto\n📦 Consultar un pedido\n👤 Hablar con un asesor\n\n¿En qué puedo ayudarte?',
         },
         {
           conversationId: conversacionDemo.id,
@@ -327,51 +288,12 @@ async function main() {
         {
           conversationId: conversacionDemo.id,
           sender: MessageSender.BOT,
-          content: '¡Aquí tienes nuestras camisetas! 👕\n\n1. *Camiseta Atlas Blanca* - $45.000 COP\n   Tallas: S, M, L, XL | Stock: 20 unidades\n\n2. *Camiseta Atlas Negra* - $45.000 COP\n   Tallas: S, M, L, XL | Stock: 18 unidades\n\n¿Te interesa alguna? Puedo darte más detalles o agregarla a tu carrito. 😊',
+          content: '¡Aquí tienes nuestras camisetas! 👕\n\n1. *Camiseta Atlas Blanca* - $45.000 COP\n   Tallas: S, M, L, XL | Stock: 20 unidades\n\n2. *Camiseta Atlas Negra* - $45.000 COP\n   Tallas: S, M, L, XL | Stock: 18 unidades\n\n¿Te interesa alguna? Puedo darte más detalles o preguntas. 😊',
         },
       ],
     });
   }
   console.log('✅ Conversación demo creada');
-
-  // ─── Pedido demo ─────────────────────────────────────────────
-  const existingOrder = await prisma.order.findFirst({
-    where: { customerId: clienteDemo.id },
-  });
-
-  if (!existingOrder) {
-    const orderDemo = await prisma.order.create({
-      data: {
-        customerId: clienteDemo.id,
-        status: OrderStatus.DELIVERED,
-        subtotal: 90000,
-        shipping: 10000,
-        total: 100000,
-        paymentMethod: PaymentMethod.EFECTIVO,
-        shippingAddress: 'Calle 45 # 23-10, Bogotá',
-        notes: 'Pedido demo de prueba',
-        items: {
-          create: [
-            {
-              productId: prodCamisetaBlanca.id,
-              productName: 'Camiseta Atlas Blanca',
-              quantity: 2,
-              unitPrice: 45000,
-              subtotal: 90000,
-            },
-          ],
-        },
-        statusHistory: {
-          create: [
-            { status: OrderStatus.PENDING, notes: 'Pedido creado', changedBy: 'BOT' },
-            { status: OrderStatus.CONFIRMED, notes: 'Pedido confirmado', changedBy: admin.id },
-            { status: OrderStatus.DELIVERED, notes: 'Pedido entregado', changedBy: admin.id },
-          ],
-        },
-      },
-    });
-    console.log('✅ Pedido demo creado:', orderDemo.id);
-  }
 
   console.log('\n🎉 Seed completado exitosamente!');
   console.log('\n📋 Credenciales de desarrollo:');

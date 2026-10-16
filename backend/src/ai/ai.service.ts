@@ -29,7 +29,7 @@ export class AiService {
 
   async processMessage(
     conversationId: string,
-    customerId: string,
+    phoneNumber: string,
     userMessage: string,
   ): Promise<string> {
     try {
