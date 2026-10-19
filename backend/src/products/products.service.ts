@@ -27,9 +27,7 @@ export class ProductsService {
     return this.prisma.product.create({
       data: {
         ...productData,
-        variants: variants
-          ? { create: variants }
-          : undefined,
+        variants: variants ? { create: variants } : undefined,
       },
       include: { category: true, variants: true },
     });
@@ -42,7 +40,13 @@ export class ProductsService {
     page?: number;
     limit?: number;
   }) {
-    const { search, categoryId, active = true, page = 1, limit = 20 } = options ?? {};
+    const {
+      search,
+      categoryId,
+      active = true,
+      page = 1,
+      limit = 20,
+    } = options ?? {};
     const skip = (page - 1) * limit;
 
     const where: any = { active };
@@ -132,14 +136,52 @@ export class ProductsService {
   }
 
   async searchForBot(query: string) {
+    const ignoredTerms = new Set([
+      'con',
+      'cual',
+      'cuanto',
+      'cuesta',
+      'de',
+      'disponible',
+      'el',
+      'en',
+      'es',
+      'hay',
+      'la',
+      'las',
+      'los',
+      'me',
+      'para',
+      'por',
+      'precio',
+      'que',
+      'quiero',
+      'saber',
+      'un',
+      'una',
+      'ver',
+    ]);
+    const searchTerms = [
+      ...new Set(
+        (
+          query
+            .normalize('NFD')
+            .replace(/\p{Diacritic}/gu, '')
+            .toLowerCase()
+            .match(/[\p{L}\p{N}-]+/gu) ?? []
+        ).filter((term) => term.length > 2 && !ignoredTerms.has(term)),
+      ),
+    ];
+    const searchConditions = searchTerms.flatMap((term) => [
+      { name: { contains: term, mode: 'insensitive' as const } },
+      { description: { contains: term, mode: 'insensitive' as const } },
+      { category: { name: { contains: term, mode: 'insensitive' as const } } },
+    ]);
+
     return this.prisma.product.findMany({
       where: {
         active: true,
-        OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
-          { category: { name: { contains: query, mode: 'insensitive' } } },
-        ],
+        ...(searchConditions.length ? { OR: searchConditions } : {}),
       },
       include: {
         category: { select: { id: true, name: true } },
