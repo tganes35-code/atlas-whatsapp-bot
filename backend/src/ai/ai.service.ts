@@ -19,12 +19,6 @@ export class AiService {
     private readonly mockAiProvider: MockAiProvider,
   ) {
     const hasApiKey = !!this.config.get<string>('OPENAI_API_KEY');
-    const isProduction = this.config.get<string>('LOCAL_MODE') === 'false';
-    if (isProduction && !hasApiKey) {
-      throw new Error(
-        'OPENAI_API_KEY must be configured when LOCAL_MODE=false',
-      );
-    }
     this.aiProvider = hasApiKey ? this.openAiProvider : this.mockAiProvider;
     this.logger.log(
       `Proveedor IA activo: ${hasApiKey ? 'OpenAI' : 'MockAI (sin API key)'}`,

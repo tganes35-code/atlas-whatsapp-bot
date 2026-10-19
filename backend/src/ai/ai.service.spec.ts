@@ -81,10 +81,14 @@ describe('AiService', () => {
     ).toHaveLength(1);
   });
 
-  it('does not start the production provider without an OpenAI key', () => {
-    expect(() => createService('false')).toThrow(
-      'OPENAI_API_KEY must be configured when LOCAL_MODE=false',
-    );
+  it('uses MockAI in WhatsApp production mode when no OpenAI key is configured', async () => {
+    const { service, openAiChat, mockAiChat } = createService('false');
+
+    await expect(
+      service.processMessage('conversation-1', 'Hola'),
+    ).resolves.toBe('Respuesta local');
+    expect(mockAiChat).toHaveBeenCalledTimes(1);
+    expect(openAiChat).not.toHaveBeenCalled();
   });
 
   it('uses MockAI only in local mode', async () => {
