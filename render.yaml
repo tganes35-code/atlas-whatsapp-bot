@@ -38,4 +38,3 @@ databases:
     user: atlas_user
     region: oregon
     plan: free
-    version: 15
