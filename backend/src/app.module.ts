@@ -14,6 +14,7 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { TransformInterceptor } from './common/interceptors/transform.intercepto
     AiModule,
     WhatsappModule,
   ],
+  controllers: [HealthController],
   providers: [
     {
       provide: APP_GUARD,

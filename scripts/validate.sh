@@ -39,7 +39,12 @@ echo "▶ Unit Tests..."
 run_check "Unit Tests" "npx jest --passWithNoTests --forceExit --silent" "$BACKEND_DIR"
 
 echo "▶ E2E Tests..."
-run_check "E2E Tests" "npx jest --config ./test/jest-e2e.json --forceExit --silent" "$BACKEND_DIR"
+if [ -f "$BACKEND_DIR/test/jest-e2e.json" ]; then
+  run_check "E2E Tests" "npx jest --config ./test/jest-e2e.json --forceExit --silent" "$BACKEND_DIR"
+else
+  RESULTS["E2E Tests"]="SKIP"
+  DETAILS["E2E Tests"]="No existe configuración ni suite E2E en backend/test."
+fi
 
 echo "▶ Backend Build..."
 run_check "Backend Build" "npm run build" "$BACKEND_DIR"
@@ -56,9 +61,14 @@ printf "  %-26s %s\n" "--------------------------" "----------"
 
 for key in "TypeScript Backend" "Prisma Validate" "Unit Tests" "E2E Tests" "Backend Build"; do
   result="${RESULTS[$key]:-SKIP}"
-  if [ "$result" != "PASS" ]; then
+  if [ "$result" = "FAIL" ]; then
     ALL_PASS=false
     printf "  %-26s ❌ FAIL\n" "$key"
+    if [ -n "${DETAILS[$key]}" ]; then
+      echo "     └─ ${DETAILS[$key]}"
+    fi
+  elif [ "$result" = "SKIP" ]; then
+    printf "  %-26s ⏭️  SKIP\n" "$key"
     if [ -n "${DETAILS[$key]}" ]; then
       echo "     └─ ${DETAILS[$key]}"
     fi

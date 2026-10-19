@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { ConversationChannel } from '@prisma/client';
+import { IsEnum, IsOptional, IsString } from 'class-validator';
 
 export class ProcessMessageDto {
   @ApiProperty({ example: '3001234567' })
@@ -10,8 +11,11 @@ export class ProcessMessageDto {
   @IsString()
   message: string;
 
-  @ApiPropertyOptional({ default: 'LOCAL' })
+  @ApiPropertyOptional({
+    enum: ConversationChannel,
+    default: ConversationChannel.WHATSAPP,
+  })
   @IsOptional()
-  @IsString()
-  channel?: string;
+  @IsEnum(ConversationChannel)
+  channel?: ConversationChannel;
 }

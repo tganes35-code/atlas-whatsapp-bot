@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
   const logger = new Logger('Bootstrap');
 
   // ─── Seguridad ──────────────────────────────────────────────
@@ -47,8 +47,12 @@ async function bootstrap() {
 
   logger.log(`🚀 Backend corriendo en: http://localhost:${port}`);
   logger.log(`📖 Swagger disponible en: http://localhost:${port}/api/docs`);
-  logger.log(`🤖 Modo IA: ${process.env.OPENAI_API_KEY ? 'OpenAI' : 'MockAI (sin API key)'}`);
-  logger.log(`📱 Modo WhatsApp: ${process.env.LOCAL_MODE !== 'false' ? 'LOCAL' : 'PRODUCCIÓN'}`);
+  logger.log(
+    `🤖 Modo IA: ${process.env.OPENAI_API_KEY ? 'OpenAI' : 'MockAI (sin API key)'}`,
+  );
+  logger.log(
+    `📱 Modo WhatsApp: ${process.env.LOCAL_MODE !== 'false' ? 'LOCAL' : 'PRODUCCIÓN'}`,
+  );
 }
 
 bootstrap();

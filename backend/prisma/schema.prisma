@@ -132,13 +132,16 @@ model Conversation {
 // ─── Message ──────────────────────────────────────────────
 
 model Message {
-  id             String        @id @default(cuid())
-  conversationId String
-  sender         MessageSender
-  content        String
-  type           MessageType   @default(TEXT)
-  metadata       Json?
-  createdAt      DateTime      @default(now())
+  id                   String        @id @default(cuid())
+  conversationId       String
+  sender               MessageSender
+  content              String
+  type                 MessageType   @default(TEXT)
+  metadata             Json?
+  whatsappMessageId    String?       @unique
+  botResponse          String?
+  botResponseSentAt    DateTime?
+  createdAt            DateTime      @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id])
 

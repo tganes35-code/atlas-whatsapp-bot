@@ -1,8 +1,17 @@
 import {
-  Body, Controller, Get, HttpCode, Logger, Post, Query, Res,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Post,
+  Query,
+  Req,
+  Res,
+  UnauthorizedException,
 } from '@nestjs/common';
+import type { RawBodyRequest } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Response } from 'express';
+import type { Request, Response } from 'express';
 import { WhatsappService } from './whatsapp.service';
 import { MessagesService } from '../messages/messages.service';
 import { Public } from '../common/decorators/public.decorator';
@@ -10,8 +19,6 @@ import { Public } from '../common/decorators/public.decorator';
 @ApiTags('whatsapp')
 @Controller('webhooks/whatsapp')
 export class WhatsappController {
-  private readonly logger = new Logger(WhatsappController.name);
-
   constructor(
     private readonly whatsappService: WhatsappService,
     private readonly messagesService: MessagesService,
@@ -38,25 +45,36 @@ export class WhatsappController {
   @Post()
   @HttpCode(200)
   @ApiOperation({ summary: 'Recibir mensajes de WhatsApp' })
-  async receiveMessage(@Body() body: any) {
-    const parsed = this.whatsappService.parseWebhookMessage(body);
-
-    if (!parsed) {
-      return { status: 'ok' };
+  async receiveMessage(
+    @Body() body: unknown,
+    @Req() request: RawBodyRequest<Request>,
+  ) {
+    const signature = request.headers['x-hub-signature-256'];
+    if (
+      typeof signature !== 'string' ||
+      !this.whatsappService.isValidWebhookSignature(signature, request.rawBody)
+    ) {
+      throw new UnauthorizedException('Invalid WhatsApp webhook signature');
     }
 
-    try {
-      const result = await this.messagesService.processIncomingMessage({
-        phone: parsed.phone,
-        message: parsed.message,
-        channel: 'WHATSAPP',
-      });
+    const messages = this.whatsappService.parseWebhookMessages(body);
+    for (const parsed of messages) {
+      const result = await this.messagesService.processIncomingMessage(
+        {
+          phone: parsed.phone,
+          message: parsed.message,
+          channel: 'WHATSAPP',
+        },
+        parsed.id,
+      );
 
-      if (result.botResponse) {
-        await this.whatsappService.sendTextMessage(parsed.phone, result.botResponse);
+      if (result.shouldSend && result.botResponse) {
+        await this.whatsappService.sendTextMessage(
+          parsed.phone,
+          result.botResponse,
+        );
+        await this.messagesService.markBotResponseSent(result.messageId);
       }
-    } catch (error: any) {
-      this.logger.error('Error procesando webhook WhatsApp:', error.message);
     }
 
     return { status: 'ok' };

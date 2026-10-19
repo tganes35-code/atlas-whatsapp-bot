@@ -3,8 +3,6 @@ import {
   AiProvider,
   AiResponse,
   ChatMessage,
-  ToolDefinition,
-  ToolCall,
 } from '../interfaces/ai-provider.interface';
 
 /**
@@ -20,83 +18,174 @@ export class MockAiProvider implements AiProvider {
     return true; // Siempre disponible
   }
 
-  async chat(messages: ChatMessage[], tools?: ToolDefinition[]): Promise<AiResponse> {
+  async chat(messages: ChatMessage[]): Promise<AiResponse> {
     this.logger.debug('MockAI procesando mensaje...');
 
-    const lastUserMessage = messages
-      .filter((m) => m.role === 'user')
-      .pop()?.content
-      ?.toLowerCase() ?? '';
+    const lastUserMessage =
+      messages
+        .filter((m) => m.role === 'user')
+        .pop()
+        ?.content?.toLowerCase() ?? '';
 
     // ─── Detección de intenciones ───────────────────────────────
 
     // Saludo
-    if (this.matches(lastUserMessage, ['hola', 'buenas', 'buenos días', 'hey', 'hi', 'hello', 'buen día'])) {
+    if (
+      this.matches(lastUserMessage, [
+        'hola',
+        'buenas',
+        'buenos días',
+        'hey',
+        'hi',
+        'hello',
+        'buen día',
+      ])
+    ) {
+      return this.response('¡Hola! ¿En qué puedo ayudarte hoy?');
+    }
+
+    if (
+      this.matches(lastUserMessage, [
+        'asesor',
+        'persona',
+        'humano',
+        'agente',
+        'hablar con alguien',
+        'quiero hablar con',
+      ])
+    ) {
       return this.response(
-        '¡Hola! 👋 Bienvenido a *Atlas Demo Store*.\n\nPuedo ayudarte a:\n🛍️ Ver productos\n🔎 Buscar un producto\n🛒 Crear un pedido\n📦 Consultar un pedido\n👤 Hablar con un asesor\n\n¿En qué puedo ayudarte hoy?',
+        'No puedo transferirte automáticamente en este momento. Cuéntame brevemente qué necesitas y te indicaré cómo continuar.',
       );
     }
 
-    // Human handoff
-    if (this.matches(lastUserMessage, ['asesor', 'persona', 'humano', 'agente', 'hablar con alguien', 'quiero hablar con'])) {
-      return this.responseWithTool('handoffToHuman', {});
+    if (
+      this.matches(lastUserMessage, [
+        'carrito',
+        'mi carrito',
+        'qué tengo',
+        'que tengo',
+        'mi pedido actual',
+      ])
+    ) {
+      return this.response(
+        'Todavía no puedo consultar un carrito desde este chat. Si me dices qué producto te interesa, puedo ayudarte con la información disponible.',
+      );
     }
 
-    // Ver carrito
-    if (this.matches(lastUserMessage, ['carrito', 'mi carrito', 'qué tengo', 'que tengo', 'mi pedido actual'])) {
-      return this.responseWithTool('getCart', {});
+    if (
+      this.matches(lastUserMessage, [
+        'quiero comprar',
+        'confirmar',
+        'proceder',
+        'finalizar',
+        'hacer pedido',
+        'ordenar',
+      ])
+    ) {
+      return this.response(
+        'Puedo orientarte sobre los productos, pero no puedo crear pedidos automáticamente todavía. ¿Qué producto te interesa?',
+      );
     }
 
-    // Confirmar compra / crear pedido
-    if (this.matches(lastUserMessage, ['quiero comprar', 'confirmar', 'proceder', 'finalizar', 'hacer pedido', 'ordenar'])) {
-      return this.responseWithTool('createOrder', {});
+    if (
+      this.matches(lastUserMessage, [
+        'estado de mi pedido',
+        'mi pedido',
+        'donde está',
+        'dónde está',
+        'seguimiento',
+      ])
+    ) {
+      return this.response(
+        'No tengo acceso al seguimiento de pedidos en este momento. Si compartes tu número de pedido, un asesor podrá ayudarte.',
+      );
     }
 
-    // Consultar pedido existente
-    if (this.matches(lastUserMessage, ['estado de mi pedido', 'mi pedido', 'donde está', 'dónde está', 'seguimiento'])) {
-      return this.responseWithTool('getOrderStatus', {});
-    }
-
-    // Buscar productos
-    const productSearchTerms = ['camiseta', 'gorra', 'chaqueta', 'pantalón', 'pantalon', 'ropa', 'productos', 'catálogo', 'catalogo', 'ver productos', 'qué tienen', 'que tienen'];
-    const searchMatch = productSearchTerms.find((term) => lastUserMessage.includes(term));
+    const productSearchTerms = [
+      'camiseta',
+      'gorra',
+      'chaqueta',
+      'pantalón',
+      'pantalon',
+      'ropa',
+      'productos',
+      'catálogo',
+      'catalogo',
+      'ver productos',
+      'qué tienen',
+      'que tienen',
+    ];
+    const searchMatch = productSearchTerms.find((term) =>
+      lastUserMessage.includes(term),
+    );
     if (searchMatch) {
-      const query = searchMatch === 'ropa' || searchMatch === 'productos' || searchMatch === 'catálogo' || searchMatch === 'catalogo' || searchMatch === 'ver productos' || searchMatch === 'qué tienen' || searchMatch === 'que tienen'
-        ? ''
-        : searchMatch;
-      return this.responseWithTool('searchProducts', { query });
+      const catalog = messages[0]?.content.split(
+        'Información actual del catálogo',
+      )[1];
+      if (catalog) {
+        return this.response(
+          `Esta es la información que encontré en el catálogo:${catalog.split('\n\nNo se encontraron productos')[0]}`,
+        );
+      }
+      return this.response(
+        'No encontré información de productos para esa consulta en el catálogo disponible. ¿Quieres que te ayude con otra cosa?',
+      );
     }
 
     // Precio
-    if (this.matches(lastUserMessage, ['precio', 'cuánto cuesta', 'cuanto cuesta', 'valor', 'costo', 'cuánto vale', 'cuanto vale'])) {
+    if (
+      this.matches(lastUserMessage, [
+        'precio',
+        'cuánto cuesta',
+        'cuanto cuesta',
+        'valor',
+        'costo',
+        'cuánto vale',
+        'cuanto vale',
+      ])
+    ) {
       return this.response(
         'Para consultarte el precio necesito saber qué producto te interesa. ¿Puedes decirme el nombre del producto? 😊',
       );
     }
 
-    // Agregar al carrito (número + producto)
-    const addToCartMatch = lastUserMessage.match(/quiero\s+(\d+)|(\d+)\s+unidades?|agregar?\s+(\d+)|comprar\s+(\d+)/);
-    if (addToCartMatch || this.matches(lastUserMessage, ['agregar', 'añadir', 'quiero uno', 'quiero una', 'lo quiero', 'la quiero', 'quiero comprar', 'me llevo'])) {
-      const quantityMatch = lastUserMessage.match(/\d+/);
-      const quantity = quantityMatch ? parseInt(quantityMatch[0]) : 1;
-      return this.responseWithTool('addToCart', { quantity });
-    }
-
     // Despedida
-    if (this.matches(lastUserMessage, ['gracias', 'hasta luego', 'adiós', 'adios', 'bye', 'chao'])) {
+    if (
+      this.matches(lastUserMessage, [
+        'gracias',
+        'hasta luego',
+        'adiós',
+        'adios',
+        'bye',
+        'chao',
+      ])
+    ) {
       return this.response(
         '¡Hasta luego! 👋 Fue un placer atenderte. Si necesitas algo más, aquí estaré. ¡Que tengas un excelente día! 😊',
       );
     }
 
-    // Información de la empresa
-    if (this.matches(lastUserMessage, ['horario', 'dirección', 'dirección', 'teléfono', 'telefono', 'información', 'información', 'política', 'devolución'])) {
-      return this.responseWithTool('getCompanyInformation', {});
+    if (
+      this.matches(lastUserMessage, [
+        'horario',
+        'dirección',
+        'dirección',
+        'teléfono',
+        'telefono',
+        'información',
+        'información',
+        'política',
+        'devolución',
+      ])
+    ) {
+      return this.response(
+        'No tengo configurada la información de horarios, dirección o políticas de la empresa. Un asesor podrá confirmártela.',
+      );
     }
 
-    // Respuesta genérica
     return this.response(
-      'Entiendo tu consulta. 😊 Puedo ayudarte con:\n\n🛍️ *Ver productos* - dime "ver productos"\n🔎 *Buscar* - dime el nombre del producto\n🛒 *Carrito* - dime "mi carrito"\n📦 *Pedidos* - dime "estado de mi pedido"\n👤 *Asesor* - dime "quiero hablar con un asesor"\n\n¿Qué necesitas?',
+      'Gracias por escribirnos. Cuéntame qué necesitas y te ayudaré con la información disponible.',
     );
   }
 
@@ -106,12 +195,5 @@ export class MockAiProvider implements AiProvider {
 
   private response(content: string): AiResponse {
     return { content };
-  }
-
-  private responseWithTool(toolName: string, args: Record<string, any>): AiResponse {
-    return {
-      content: '',
-      toolCalls: [{ name: toolName, arguments: args }],
-    };
   }
 }
