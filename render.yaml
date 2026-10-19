@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: atlas-chatbot-api
+    runtime: node
+    plan: free
+    region: oregon  # closest to USA/Mexico
+    
+    buildCommand: >
+      cd backend &&
+      npm install &&
+      npm run build &&
+      npm run prisma:migrate:deploy
+    
+    startCommand: >
+      cd backend &&
+      npm run start:prod
+    
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: JWT_SECRET
+        sync: false
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_APP_SECRET
+        sync: false
+      - key: WHATSAPP_VERIFY_TOKEN
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: atlas-db
+          property: connectionString
+      - key: LOCAL_MODE
+        value: "false"
+      - key: CORS_ORIGIN
+        value: "*"
+
+  - type: pserv
+    name: atlas-db
+    runtime: postgres15
+    plan: free
+    region: oregon
+    ipAllowList: []
+    
+databases:
+  - name: atlas-db
+    databaseName: atlas_prod
+    user: atlas_user
+    region: oregon
+    plan: free
+    version: 15
