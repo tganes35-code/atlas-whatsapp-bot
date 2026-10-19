@@ -31,22 +31,6 @@ services:
         value: gpt-4o-mini
       - key: LOCAL_MODE
         value: "false"
-      - key: CORS_ORIGIN
-        value: https://${{atlas-chatbot-web.host}}
-
-  - type: web
-    name: atlas-chatbot-web
-    runtime: static
-    plan: free
-    buildCommand: cd frontend && npm ci && npm run build
-    staticPublishPath: frontend/dist
-    envVars:
-      - key: VITE_API_URL
-        value: https://${{atlas-chatbot-api.host}}/api
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
 
 databases:
   - name: atlas-db

@@ -1,14 +1,11 @@
-version: '3.8'
-
 services:
-  # PostgreSQL Database
   db:
     image: postgres:16-alpine
     container_name: atlas-db
     environment:
       POSTGRES_DB: atlas_db
       POSTGRES_USER: atlas
-      POSTGRES_PASSWORD: atlas_production_secret_change_in_prod
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -19,35 +16,29 @@ services:
       timeout: 5s
       retries: 5
 
-  # Backend API
   backend:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
     container_name: atlas-backend
     environment:
-      DATABASE_URL: "postgresql://atlas:atlas_production_secret_change_in_prod@db:5432/atlas_db?schema=public"
-      JWT_SECRET: "${JWT_SECRET}"
-      JWT_EXPIRES_IN: "7d"
+      DATABASE_URL: "postgresql://atlas:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/atlas_db?schema=public"
+      JWT_SECRET: "${JWT_SECRET:?Set JWT_SECRET}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:?Set ADMIN_PASSWORD}"
       NODE_ENV: "production"
       PORT: "3000"
-      WHATSAPP_ACCESS_TOKEN: "${WHATSAPP_ACCESS_TOKEN}"
-      WHATSAPP_PHONE_NUMBER_ID: "${WHATSAPP_PHONE_NUMBER_ID}"
-      WHATSAPP_APP_SECRET: "${WHATSAPP_APP_SECRET}"
-      WHATSAPP_VERIFY_TOKEN: "${WHATSAPP_VERIFY_TOKEN}"
-      OPENAI_API_KEY: "${OPENAI_API_KEY}"
+      WHATSAPP_ACCESS_TOKEN: "${WHATSAPP_ACCESS_TOKEN:?Set WHATSAPP_ACCESS_TOKEN}"
+      WHATSAPP_PHONE_NUMBER_ID: "${WHATSAPP_PHONE_NUMBER_ID:?Set WHATSAPP_PHONE_NUMBER_ID}"
+      WHATSAPP_APP_SECRET: "${WHATSAPP_APP_SECRET:?Set WHATSAPP_APP_SECRET}"
+      WHATSAPP_VERIFY_TOKEN: "${WHATSAPP_VERIFY_TOKEN:?Set WHATSAPP_VERIFY_TOKEN}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       OPENAI_MODEL: "gpt-4o-mini"
-      CORS_ORIGIN: "https://admin.tuempresa.com"
       LOCAL_MODE: "false"
     ports:
       - "3000:3000"
     depends_on:
       db:
         condition: service_healthy
-    volumes:
-      - ./backend/src:/app/src
-    command: >
-      sh -c "npm run prisma:migrate:deploy && npm run start:prod"
 
 volumes:
   postgres_data:

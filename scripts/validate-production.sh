@@ -22,8 +22,8 @@ required_vars=(
     "WHATSAPP_PHONE_NUMBER_ID"
     "WHATSAPP_APP_SECRET"
     "WHATSAPP_VERIFY_TOKEN"
+    "ADMIN_PASSWORD"
     "NODE_ENV"
-    "PORT"
 )
 
 for var in "${required_vars[@]}"; do
@@ -46,6 +46,13 @@ if [ ${#JWT_SECRET} -lt 32 ]; then
     ((ERRORS++))
 else
     echo "   ✓ JWT_SECRET tiene longitud segura (${#JWT_SECRET} chars)"
+fi
+
+if [ ${#ADMIN_PASSWORD} -lt 16 ]; then
+    echo "   ❌ ADMIN_PASSWORD debe tener al menos 16 caracteres"
+    ((ERRORS++))
+else
+    echo "   ✓ ADMIN_PASSWORD tiene longitud suficiente"
 fi
 
 # ─────────────────────────────────────────────────────────────
@@ -98,19 +105,7 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────
-# 5. Verificar archivo .env.production
-# ─────────────────────────────────────────────────────────────
-echo ""
-echo "📄 Verificando archivos de configuración..."
-
-if [ ! -f "backend/.env.production" ]; then
-    echo "   ⚠️  backend/.env.production no encontrado"
-else
-    echo "   ✓ backend/.env.production existe"
-fi
-
-# ─────────────────────────────────────────────────────────────
-# 6. Verificar que el código está compilado
+# 5. Verificar que el código está compilado
 # ─────────────────────────────────────────────────────────────
 echo ""
 echo "🔨 Verificando build..."
@@ -121,23 +116,17 @@ else
     echo "   ⚠️  Backend no compilado. Ejecutar: cd backend && npm run build"
 fi
 
-if [ -d "frontend/dist" ] && [ -f "frontend/dist/index.html" ]; then
-    echo "   ✓ Frontend compilado"
-else
-    echo "   ⚠️  Frontend no compilado. Ejecutar: cd frontend && npm run build"
-fi
-
 # ─────────────────────────────────────────────────────────────
-# 7. Verificar Docker (si está disponible)
+# 6. Verificar Docker (si está disponible)
 # ─────────────────────────────────────────────────────────────
 if command -v docker &> /dev/null; then
     echo ""
     echo "🐳 Verificando Docker..."
     
-    if [ ! -f "backend/Dockerfile" ]; then
-        echo "   ⚠️  backend/Dockerfile no encontrado"
+    if [ ! -f "Dockerfile" ]; then
+        echo "   ⚠️  Dockerfile no encontrado"
     else
-        echo "   ✓ backend/Dockerfile existe"
+        echo "   ✓ Dockerfile existe"
     fi
     
     if [ ! -f "docker-compose.prod.yml" ]; then
@@ -157,10 +146,9 @@ if [ $ERRORS -eq 0 ]; then
     echo "✅ VALIDACIÓN COMPLETA - Listo para producción"
     echo ""
     echo "Próximos pasos:"
-    echo "1. Ir a https://railway.app"
-    echo "2. Conectar tu repo GitHub"
-    echo "3. Agregar variables de entorno"
-    echo "4. Desplegar"
+    echo "1. Configurar las variables requeridas en Render"
+    echo "2. Desplegar el Blueprint de Render"
+    echo "3. Configurar el webhook de Meta en /api/webhooks/whatsapp"
     exit 0
 else
     echo "❌ ERRORES ENCONTRADOS: $ERRORS"

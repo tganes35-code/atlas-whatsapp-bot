@@ -1,61 +1,31 @@
-# Atlas WhatsApp Chatbot - Dockerfile
-
-# Stage 1: Build
 FROM node:24-alpine AS builder
 
-WORKDIR /app
+WORKDIR /app/backend
 
-# Copiar archivos de dependencias
-COPY backend/package*.json ./backend/
-COPY frontend/package*.json ./frontend/
+COPY backend/package*.json ./
+RUN npm ci
 
-# Instalar dependencias
-RUN cd backend && npm ci --omit=dev
-RUN cd frontend && npm ci --omit=dev
+COPY backend ./
+RUN npx prisma generate && npm run build
 
-# Copiar código fuente
-COPY backend ./backend
-COPY frontend ./frontend
-COPY prisma ./prisma
-
-# Compilar backend
-RUN cd backend && npm run build
-
-# Compilar frontend
-RUN cd frontend && npm run build
-
-# Stage 2: Runtime
 FROM node:24-alpine
 
-WORKDIR /app
+WORKDIR /app/backend
 
-# Instalar dumb-init para mejor manejo de señales
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init \
+  && addgroup -g 1001 -S nodejs \
+  && adduser -S nodejs -u 1001
 
-# Copiar desde builder
-COPY --from=builder /app/backend/dist ./backend/dist
-COPY --from=builder /app/backend/node_modules ./backend/node_modules
-COPY --from=builder /app/backend/package.json ./backend/
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/frontend/dist ./frontend/dist
+COPY --from=builder --chown=nodejs:nodejs /app/backend/package*.json ./
+COPY --from=builder --chown=nodejs:nodejs /app/backend/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/backend/dist ./dist
+COPY --from=builder --chown=nodejs:nodejs /app/backend/prisma ./prisma
 
-# Variables de entorno default
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/api/auth/login', (r) => {if (r.statusCode !== 200) throw new Error('Service unavailable')})"
-
-# User no-root
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nodejs -u 1001
 USER nodejs
-
-# Usar dumb-init para iniciar la aplicación
-ENTRYPOINT ["/sbin/dumb-init", "--"]
-
-# Start backend
-CMD ["node", "backend/dist/main.js"]
-
 EXPOSE 3000
+
+ENTRYPOINT ["/sbin/dumb-init", "--"]
+CMD ["sh", "-c", "npm run prisma:migrate:deploy && node dist/init-production.js && npm run start:prod"]

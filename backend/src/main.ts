@@ -1,4 +1,4 @@
-import { NestFactory, Reflector } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
@@ -10,11 +10,6 @@ async function bootstrap() {
 
   // ─── Seguridad ──────────────────────────────────────────────
   app.use(helmet());
-
-  app.enableCors({
-    origin: process.env.CORS_ORIGIN ?? 'http://localhost:5173',
-    credentials: true,
-  });
 
   // ─── Prefijo global de API ───────────────────────────────────
   app.setGlobalPrefix('api');

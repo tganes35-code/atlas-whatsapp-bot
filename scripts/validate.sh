@@ -4,7 +4,6 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BACKEND_DIR="$SCRIPT_DIR/../backend"
-FRONTEND_DIR="$SCRIPT_DIR/../frontend"
 
 declare -A RESULTS
 declare -A DETAILS
@@ -45,9 +44,6 @@ run_check "E2E Tests" "npx jest --config ./test/jest-e2e.json --forceExit --sile
 echo "▶ Backend Build..."
 run_check "Backend Build" "npm run build" "$BACKEND_DIR"
 
-echo "▶ Frontend Build..."
-run_check "Frontend Build" "npm run build" "$FRONTEND_DIR"
-
 echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "║              RESUMEN                     ║"
@@ -58,7 +54,7 @@ ALL_PASS=true
 printf "  %-26s %s\n" "Check" "Resultado"
 printf "  %-26s %s\n" "--------------------------" "----------"
 
-for key in "TypeScript Backend" "Prisma Validate" "Unit Tests" "E2E Tests" "Backend Build" "Frontend Build"; do
+for key in "TypeScript Backend" "Prisma Validate" "Unit Tests" "E2E Tests" "Backend Build"; do
   result="${RESULTS[$key]:-SKIP}"
   if [ "$result" != "PASS" ]; then
     ALL_PASS=false
