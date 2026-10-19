@@ -11,19 +11,21 @@ describe('ProductsService.searchForBot', () => {
 
     await service.searchForBot('¿Cuánto cuesta la Camiseta Clásica Blanca?');
 
-    const where = findMany.mock.calls[0][0].where;
-    expect(where.active).toBe(true);
-    expect(where.OR).toEqual(
+    const searches = findMany.mock.calls.map(([args]) => args.where.OR);
+    expect(findMany).toHaveBeenCalledTimes(3);
+    expect(searches[0]).toEqual(
       expect.arrayContaining([
         { name: { contains: 'camiseta', mode: 'insensitive' } },
-        { name: { contains: 'clasica', mode: 'insensitive' } },
-        { name: { contains: 'blanca', mode: 'insensitive' } },
       ]),
     );
-    expect(where.OR).not.toEqual(
+    expect(searches[1]).toEqual(
       expect.arrayContaining([
-        { name: { contains: 'cuanto', mode: 'insensitive' } },
-        { name: { contains: 'cuesta', mode: 'insensitive' } },
+        { name: { contains: 'clásica', mode: 'insensitive' } },
+      ]),
+    );
+    expect(searches[2]).toEqual(
+      expect.arrayContaining([
+        { name: { contains: 'blanca', mode: 'insensitive' } },
       ]),
     );
   });
@@ -37,6 +39,14 @@ describe('ProductsService.searchForBot', () => {
 
     await service.searchForBot('¿Cuánto cuesta?');
 
-    expect(findMany.mock.calls[0][0].where).toEqual({ active: true });
+    expect(findMany).toHaveBeenCalledTimes(1);
+    expect(findMany.mock.calls[0][0].where).toEqual({
+      active: true,
+      OR: [
+        { name: { contains: '', mode: 'insensitive' } },
+        { description: { contains: '', mode: 'insensitive' } },
+        { category: { name: { contains: '', mode: 'insensitive' } } },
+      ],
+    });
   });
 });

@@ -163,31 +163,41 @@ export class ProductsService {
     ]);
     const searchTerms = [
       ...new Set(
-        (
-          query
-            .normalize('NFD')
-            .replace(/\p{Diacritic}/gu, '')
-            .toLowerCase()
-            .match(/[\p{L}\p{N}-]+/gu) ?? []
-        ).filter((term) => term.length > 2 && !ignoredTerms.has(term)),
+        (query.toLowerCase().match(/[\p{L}\p{N}-]+/gu) ?? []).filter(
+          (term) =>
+            term.normalize('NFD').replace(/\p{Diacritic}/gu, '').length > 2 &&
+            !ignoredTerms.has(
+              term.normalize('NFD').replace(/\p{Diacritic}/gu, ''),
+            ),
+        ),
       ),
     ];
-    const searchConditions = searchTerms.flatMap((term) => [
-      { name: { contains: term, mode: 'insensitive' as const } },
-      { description: { contains: term, mode: 'insensitive' as const } },
-      { category: { name: { contains: term, mode: 'insensitive' as const } } },
-    ]);
-
-    return this.prisma.product.findMany({
-      where: {
-        active: true,
-        ...(searchConditions.length ? { OR: searchConditions } : {}),
-      },
-      include: {
-        category: { select: { id: true, name: true } },
-        variants: { where: { active: true } },
-      },
-      take: 5,
-    });
+    const terms = searchTerms.length ? searchTerms : [''];
+    const matches = await Promise.all(
+      terms.map((term) =>
+        this.prisma.product.findMany({
+          where: {
+            active: true,
+            OR: [
+              { name: { contains: term, mode: 'insensitive' } },
+              { description: { contains: term, mode: 'insensitive' } },
+              { category: { name: { contains: term, mode: 'insensitive' } } },
+            ],
+          },
+          include: {
+            category: { select: { id: true, name: true } },
+            variants: { where: { active: true } },
+          },
+          take: 5,
+        }),
+      ),
+    );
+    const products = new Map<string, (typeof matches)[number][number]>();
+    for (const group of matches) {
+      for (const product of group) {
+        products.set(product.id, product);
+      }
+    }
+    return [...products.values()].slice(0, 5);
   }
 }
