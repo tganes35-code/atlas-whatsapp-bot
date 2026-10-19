@@ -7,16 +7,22 @@ describe('WhatsappService webhook handling', () => {
   const verifyToken = 'test-verify-token';
   let service: WhatsappService;
 
-  beforeEach(() => {
+  const createService = (localMode = 'true') => {
     const config = {
       get: jest.fn((key: string) => {
-        if (key === 'LOCAL_MODE') return 'true';
+        if (key === 'LOCAL_MODE') return localMode;
+        if (key === 'WHATSAPP_ACCESS_TOKEN') return 'test-access-token';
+        if (key === 'WHATSAPP_PHONE_NUMBER_ID') return 'configured-phone-id';
         if (key === 'WHATSAPP_APP_SECRET') return appSecret;
         if (key === 'WHATSAPP_VERIFY_TOKEN') return verifyToken;
         return undefined;
       }),
     } as unknown as ConfigService;
-    service = new WhatsappService(config);
+    return new WhatsappService(config);
+  };
+
+  beforeEach(() => {
+    service = createService();
   });
 
   it('validates signatures against the exact raw request body', () => {
@@ -89,5 +95,61 @@ describe('WhatsappService webhook handling', () => {
       { id: 'wamid.4', phone: '1004', message: 'Precio' },
     ]);
     expect(service.parseWebhookMessages(null)).toEqual([]);
+  });
+
+  it('ignores signed webhook messages for a different phone number in production', () => {
+    const productionService = createService('false');
+    const body = {
+      entry: [
+        {
+          changes: [
+            {
+              value: {
+                metadata: { phone_number_id: '123456123' },
+                messages: [
+                  {
+                    id: 'wamid.test',
+                    from: '16315551181',
+                    type: 'text',
+                    text: { body: 'this is a text message' },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(productionService.parseWebhookMessages(body)).toEqual([]);
+  });
+
+  it('parses messages for the configured phone number in production', () => {
+    const productionService = createService('false');
+    const body = {
+      entry: [
+        {
+          changes: [
+            {
+              value: {
+                metadata: { phone_number_id: 'configured-phone-id' },
+                messages: [
+                  {
+                    id: 'wamid.real',
+                    from: '1001',
+                    type: 'text',
+                    text: { body: 'Hola' },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    expect(productionService.parseWebhookMessages(body)).toEqual([
+      { id: 'wamid.real', phone: '1001', message: 'Hola' },
+    ]);
   });
 });

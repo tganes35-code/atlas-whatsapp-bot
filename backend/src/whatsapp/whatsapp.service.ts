@@ -190,6 +190,18 @@ export class WhatsappService {
           continue;
         }
 
+        const metadata = (value as { metadata?: unknown }).metadata;
+        const phoneNumberId =
+          metadata && typeof metadata === 'object'
+            ? (metadata as { phone_number_id?: unknown }).phone_number_id
+            : undefined;
+        if (!this.localMode && phoneNumberId !== this.phoneNumberId) {
+          this.logger.warn(
+            'Ignoring WhatsApp webhook event for an unconfigured phone number',
+          );
+          continue;
+        }
+
         const messages = (value as { messages?: unknown }).messages;
         if (!Array.isArray(messages)) {
           continue;
