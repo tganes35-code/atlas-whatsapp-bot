@@ -23,7 +23,10 @@ async function main() {
     console.log('📝 Verificando/creando usuario admin...');
     
     const adminEmail = 'admin@atlas.local';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'Atlas@2024!Secure';
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminPassword || adminPassword.length < 16) {
+      throw new Error('ADMIN_PASSWORD must be configured with at least 16 characters');
+    }
     
     const existingAdmin = await prisma.user.findUnique({
       where: { email: adminEmail },
@@ -42,7 +45,6 @@ async function main() {
         },
       });
       console.log(`✅ Admin creado: ${adminEmail}`);
-      console.log(`   Contraseña: ${adminPassword} (CÁMBIALA EN PRIMER LOGIN)`);
     }
 
     // ═════════════════════════════════════════════════════════════
@@ -110,7 +112,7 @@ async function main() {
     console.log('INFORMACIÓN DE ACCESO:');
     console.log('═══════════════════════════════════════════════');
     console.log(`Email: ${adminEmail}`);
-    console.log(`Contraseña: ${adminPassword}`);
+    console.log('Use the ADMIN_PASSWORD configured in the deployment environment.');
     console.log('═══════════════════════════════════════════════\n');
 
   } catch (error) {
