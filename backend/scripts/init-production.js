@@ -1,0 +1,97 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const client_1 = require("@prisma/client");
+const argon2 = require("argon2");
+const prisma = new client_1.PrismaClient();
+async function main() {
+    console.log('🚀 Inicializando Atlas WhatsApp Bot en PRODUCCIÓN...\n');
+    try {
+        console.log('📝 Verificando/creando usuario admin...');
+        const adminEmail = 'admin@atlas.local';
+        const adminPassword = process.env.ADMIN_PASSWORD || 'Atlas@2024!Secure';
+        const existingAdmin = await prisma.user.findUnique({
+            where: { email: adminEmail },
+        });
+        if (existingAdmin) {
+            console.log(`✅ Admin ya existe: ${adminEmail}`);
+        }
+        else {
+            const hashedPassword = await argon2.hash(adminPassword);
+            await prisma.user.create({
+                data: {
+                    name: 'Administrador',
+                    email: adminEmail,
+                    password: hashedPassword,
+                    role: client_1.UserRole.ADMIN,
+                },
+            });
+            console.log(`✅ Admin creado: ${adminEmail}`);
+            console.log(`   Contraseña: ${adminPassword} (CÁMBIALA EN PRIMER LOGIN)`);
+        }
+        console.log('\n📦 Verificando/creando categorías...');
+        const categories = [
+            { name: 'Camisetas', description: 'Camisetas y tops' },
+            { name: 'Pantalones', description: 'Jeans y pantalones' },
+            { name: 'Accesorios', description: 'Gorras, cinturones y más' },
+            { name: 'Chaquetas', description: 'Chaquetas y abrigos' },
+        ];
+        for (const cat of categories) {
+            const existing = await prisma.category.findUnique({
+                where: { name: cat.name },
+            });
+            if (existing) {
+                console.log(`   ✓ ${cat.name} ya existe`);
+            }
+            else {
+                await prisma.category.create({
+                    data: cat,
+                });
+                console.log(`   ✓ ${cat.name} creada`);
+            }
+        }
+        console.log('\n🛍️  Verificando/creando productos de ejemplo...');
+        const camisetas = await prisma.category.findUnique({
+            where: { name: 'Camisetas' },
+        });
+        if (camisetas) {
+            const products = [
+                { sku: 'CAM-001', name: 'Camiseta Clásica Blanca', price: 29.99, stock: 50 },
+                { sku: 'CAM-002', name: 'Camiseta Clásica Negra', price: 29.99, stock: 45 },
+                { sku: 'CAM-003', name: 'Camiseta Premium Azul', price: 39.99, stock: 30 },
+            ];
+            for (const prod of products) {
+                const existing = await prisma.product.findUnique({
+                    where: { sku: prod.sku },
+                });
+                if (existing) {
+                    console.log(`   ✓ ${prod.name} ya existe`);
+                }
+                else {
+                    await prisma.product.create({
+                        data: {
+                            categoryId: camisetas.id,
+                            ...prod,
+                        },
+                    });
+                    console.log(`   ✓ ${prod.name} creada`);
+                }
+            }
+        }
+        console.log('\n✅ Inicialización completada exitosamente\n');
+        console.log('═══════════════════════════════════════════════');
+        console.log('INFORMACIÓN DE ACCESO:');
+        console.log('═══════════════════════════════════════════════');
+        console.log(`Email: ${adminEmail}`);
+        console.log(`Contraseña: ${adminPassword}`);
+        console.log('═══════════════════════════════════════════════\n');
+    }
+    catch (error) {
+        console.error('❌ Error durante inicialización:', error);
+        process.exit(1);
+    }
+    finally {
+        await prisma.$disconnect();
+    }
+}
+main();
+//# sourceMappingURL=init-production.js.map

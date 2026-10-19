@@ -24,7 +24,7 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
     "prisma:reset": "prisma migrate reset --force",
-    "init:prod": "ts-node scripts/init-production.ts",
+    "init:prod": "ts-node src/init-production.ts",
     "validate": "bash ../scripts/validate.sh"
   },
   "dependencies": {
