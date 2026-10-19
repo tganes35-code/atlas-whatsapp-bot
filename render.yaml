@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: oregon
-    buildCommand: cd backend && npm ci && npx prisma generate && npm run build
+    buildCommand: cd backend && npm ci --include=dev && npx prisma generate && npm run build
     startCommand: cd backend && npm run prisma:migrate:deploy && node dist/init-production.js && npm run start:prod
     envVars:
       - key: NODE_ENV
